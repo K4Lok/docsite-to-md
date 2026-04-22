@@ -1,0 +1,38 @@
+[package]
+name = "docsite-to-md"
+version = "0.1.0"
+edition = "2024"
+authors = ["k4lok"]
+description = "A robust Rust CLI and library for exporting documentation sites to Markdown"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/K4Lok/docsite-to-md"
+readme = "README.md"
+keywords = ["markdown", "docs", "crawler", "gitbook", "cli"]
+categories = ["command-line-utilities", "text-processing", "web-programming"]
+
+[features]
+default = []
+browser = ["dep:fantoccini"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+futures = "0.3"
+html2md = "0.2"
+regex = "1.11"
+reqwest = { version = "0.12", features = ["json", "rustls-tls"] }
+scraper = "0.21"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+tempfile = "3.12"
+thiserror = "2.0"
+tokio = { version = "1.47", features = ["fs", "macros", "rt-multi-thread", "sync", "time"] }
+url = "2.5"
+fantoccini = { version = "0.21", optional = true, default-features = false, features = ["rustls-tls"] }
+
+[dev-dependencies]
+wiremock = "0.6"
+
+[[bin]]
+name = "docsite-to-md"
+path = "src/main.rs"
