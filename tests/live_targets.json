@@ -1,0 +1,105 @@
+[
+  {
+    "name": "mycactus-gitbook",
+    "framework": "git_book_modern",
+    "entry_url": "https://apidoc.mycactus.com/",
+    "scope_prefix": null,
+    "max_pages": 6,
+    "representative_urls": [
+      "https://apidoc.mycactus.com/"
+    ],
+    "notes": "Regression anchor for real-world GitBook coverage."
+  },
+  {
+    "name": "jest",
+    "framework": "docusaurus",
+    "entry_url": "https://jestjs.io/docs/getting-started",
+    "scope_prefix": "/docs",
+    "max_pages": 8,
+    "representative_urls": [
+      "https://jestjs.io/docs/getting-started"
+    ],
+    "notes": "Docusaurus inner docs page with code examples and heading anchors."
+  },
+  {
+    "name": "redux",
+    "framework": "docusaurus",
+    "entry_url": "https://redux.js.org/introduction/getting-started",
+    "scope_prefix": "/",
+    "max_pages": 8,
+    "representative_urls": [
+      "https://redux.js.org/introduction/getting-started"
+    ],
+    "notes": "Docusaurus docs site with nested intro routes."
+  },
+  {
+    "name": "react-native",
+    "framework": "docusaurus",
+    "entry_url": "https://reactnative.dev/docs/getting-started",
+    "scope_prefix": "/docs",
+    "max_pages": 8,
+    "representative_urls": [
+      "https://reactnative.dev/docs/getting-started"
+    ],
+    "notes": "High-profile Docusaurus deployment with mobile-focused docs."
+  },
+  {
+    "name": "mkdocs-material",
+    "framework": "mk_docs_material",
+    "entry_url": "https://squidfunk.github.io/mkdocs-material/",
+    "scope_prefix": "/mkdocs-material",
+    "max_pages": 10,
+    "representative_urls": [
+      "https://squidfunk.github.io/mkdocs-material/",
+      "https://squidfunk.github.io/mkdocs-material/getting-started/"
+    ],
+    "notes": "Reference MkDocs Material site with edit links, feedback widgets, and rich navigation."
+  },
+  {
+    "name": "vitepress",
+    "framework": "vite_press",
+    "entry_url": "https://vitepress.dev/",
+    "scope_prefix": "/",
+    "max_pages": 8,
+    "representative_urls": [
+      "https://vitepress.dev/",
+      "https://vitepress.dev/guide/what-is-vitepress"
+    ],
+    "notes": "Framework homepage; small crawls should not be dominated by locale variants."
+  },
+  {
+    "name": "vitest",
+    "framework": "vite_press",
+    "entry_url": "https://vitest.dev/guide/",
+    "scope_prefix": "/guide",
+    "max_pages": 6,
+    "representative_urls": [
+      "https://vitest.dev/guide/"
+    ],
+    "notes": "Inner VitePress docs page with code-heavy content."
+  },
+  {
+    "name": "pinia",
+    "framework": "vite_press",
+    "entry_url": "https://pinia.vuejs.org/introduction.html",
+    "scope_prefix": "/",
+    "max_pages": 6,
+    "representative_urls": [
+      "https://pinia.vuejs.org/introduction.html"
+    ],
+    "notes": "VitePress deployment using .html routes."
+  },
+  {
+    "name": "nextra",
+    "framework": "nextra",
+    "entry_url": "https://nextra.site/",
+    "scope_prefix": "/",
+    "max_pages": 10,
+    "representative_urls": [
+      "https://nextra.site/",
+      "https://nextra.site/about",
+      "https://nextra.site/api"
+    ],
+    "notes": "Nextra root plus cleaner inner pages for evaluating script leakage and content isolation."
+  }
+]

@@ -2,7 +2,7 @@ mod browser;
 mod client;
 mod error;
 mod extractors;
-mod normalize;
+pub mod normalize;
 mod types;
 
 use std::collections::{HashMap, HashSet, VecDeque};
@@ -17,7 +17,7 @@ use url::Url;
 use browser::fetch_rendered_html;
 use client::HttpClient;
 pub use error::{DocsiteError, Result};
-use extractors::{ExtractionResult, detect_extractor, normalize_page_url};
+use extractors::{detect_extractor, normalize_page_url};
 pub use types::{
     BrowserOptions, BundleOptions, CrawlManifest, CrawlOptions, ExportOptions, ExportResult,
     ExportedPage, Framework, PageError, PageRef, SiteProfile, SourceFormat,
@@ -275,12 +275,25 @@ async fn export_single_page(
     for (target, source_format) in fetch_targets {
         match client.fetch_text(&target).await {
             Ok(response) => {
+                let extractor = find_extractor_for_site(site).map_err(|error| PageError {
+                    url: page.url.clone(),
+                    phase: "extractor".to_string(),
+                    message: error.to_string(),
+                })?;
                 let extraction =
-                    extract_for_site(site, &page, &response).map_err(|error| PageError {
-                        url: page.url.clone(),
-                        phase: "extract".to_string(),
-                        message: error.to_string(),
-                    })?;
+                    extractor
+                        .extract(&page, &response)
+                        .map_err(|error| PageError {
+                            url: page.url.clone(),
+                            phase: "extract".to_string(),
+                            message: error.to_string(),
+                        })?;
+
+                if browser.enabled && extractor.should_fallback_to_browser(&extraction) {
+                    last_error =
+                        Some("static extraction too weak; trying browser fallback".to_string());
+                    continue;
+                }
 
                 let markdown = extraction.markdown;
                 let output_file = output_path_for_page(output_root, &page_url);
@@ -312,6 +325,7 @@ async fn export_single_page(
                         } else {
                             extraction.source_format
                         },
+                        used_browser_fallback: false,
                         content_hash: Some(content_hash),
                         skipped: false,
                         duplicate_of: None,
@@ -353,6 +367,7 @@ async fn export_single_page(
                         output_file: relative_output_path(output_root, &output_file),
                         title: None,
                         source_format: SourceFormat::BrowserHtml,
+                        used_browser_fallback: true,
                         content_hash: Some(sha256(&markdown)),
                         skipped: false,
                         duplicate_of: None,
@@ -390,14 +405,10 @@ fn preferred_targets(
     targets
 }
 
-fn extract_for_site(
-    site: &SiteProfile,
-    page: &PageRef,
-    response: &client::FetchResult,
-) -> Result<ExtractionResult> {
+fn find_extractor_for_site(site: &SiteProfile) -> Result<Box<dyn extractors::Extractor>> {
     for extractor in extractors::default_extractors() {
         if extractor.name() == site.extractor {
-            return extractor.extract(page, response);
+            return Ok(extractor);
         }
     }
     Err(DocsiteError::DetectionFailed(site.extractor.clone()))

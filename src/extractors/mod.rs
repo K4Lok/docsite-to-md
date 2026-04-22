@@ -1,16 +1,26 @@
+mod docusaurus;
 mod generic;
 mod gitbook;
+mod mkdocs;
+mod nextra;
+mod vitepress;
 
 use scraper::{Html, Selector};
 use url::Url;
 
 use crate::client::FetchResult;
 use crate::error::Result;
-use crate::normalize::{extract_title_from_html, html_to_markdown, normalize_markdown};
+use crate::normalize::{
+    extract_title_from_html, html_to_markdown_with_selectors, normalize_markdown,
+};
 use crate::types::{CrawlOptions, Framework, PageRef, SiteProfile, SourceFormat};
 
+pub use docusaurus::Docusaurus;
 pub use generic::GenericDocsFallback;
 pub use gitbook::{GitBookClassic, GitBookModern};
+pub use mkdocs::MkDocsMaterial;
+pub use nextra::Nextra;
+pub use vitepress::VitePress;
 
 #[derive(Debug, Clone)]
 pub struct ExtractionResult {
@@ -24,11 +34,23 @@ pub trait Extractor: Send + Sync {
     fn name(&self) -> &'static str;
     fn detect(&self, response: &FetchResult) -> Option<Vec<String>>;
     fn supports_markdown_endpoints(&self) -> bool;
+    fn nav_selectors(&self) -> &'static [&'static str];
+    fn content_selectors(&self) -> &'static [&'static str];
     fn browser_fallback_recommended(&self) -> bool {
         false
     }
-    fn discover_links(&self, base_url: &Url, html: &str, options: &CrawlOptions) -> Vec<PageRef>;
+    fn discover_links(&self, base_url: &Url, html: &str, options: &CrawlOptions) -> Vec<PageRef> {
+        discover_nav_links(base_url, html, options, self.nav_selectors())
+    }
     fn preferred_markdown_url(&self, page_url: &Url) -> Option<String>;
+    fn cleanup_markdown(&self, markdown: &str) -> String {
+        normalize_markdown(markdown, &self.framework())
+    }
+    fn should_fallback_to_browser(&self, extraction: &ExtractionResult) -> bool {
+        self.browser_fallback_recommended()
+            && extraction.source_format == SourceFormat::Html
+            && extraction.markdown.lines().count() < 8
+    }
 
     fn extract(&self, page: &PageRef, response: &FetchResult) -> Result<ExtractionResult> {
         let content_type = response.content_type.clone().unwrap_or_default();
@@ -38,13 +60,17 @@ pub trait Extractor: Send + Sync {
 
         if is_markdown {
             Ok(ExtractionResult {
-                markdown: normalize_markdown(&response.body, &self.framework()),
+                markdown: self.cleanup_markdown(&response.body),
                 title: page.title.clone(),
                 source_format: SourceFormat::Markdown,
             })
         } else {
             Ok(ExtractionResult {
-                markdown: html_to_markdown(&response.body, &self.framework()),
+                markdown: html_to_markdown_with_selectors(
+                    &response.body,
+                    &self.framework(),
+                    self.content_selectors(),
+                ),
                 title: extract_title_from_html(&response.body).or_else(|| page.title.clone()),
                 source_format: SourceFormat::Html,
             })
@@ -56,6 +82,10 @@ pub fn default_extractors() -> Vec<Box<dyn Extractor>> {
     vec![
         Box::new(GitBookModern),
         Box::new(GitBookClassic),
+        Box::new(Docusaurus),
+        Box::new(MkDocsMaterial),
+        Box::new(VitePress),
+        Box::new(Nextra),
         Box::new(GenericDocsFallback),
     ]
 }
@@ -126,16 +156,13 @@ pub fn should_include_url(candidate: &Url, base_url: &Url, options: &CrawlOption
         .any(|pattern| path.contains(pattern) || candidate.as_str().contains(pattern))
 }
 
-pub fn discover_nav_links(base_url: &Url, html: &str, options: &CrawlOptions) -> Vec<PageRef> {
+pub fn discover_nav_links(
+    base_url: &Url,
+    html: &str,
+    options: &CrawlOptions,
+    nav_selectors: &[&str],
+) -> Vec<PageRef> {
     let document = Html::parse_document(html);
-    let nav_selectors = [
-        "aside a[href]",
-        "nav a[href]",
-        "[data-testid*='sidebar'] a[href]",
-        "#SUMMARY a[href]",
-        "main a[href]",
-        "a[href]",
-    ];
     let mut pages = Vec::new();
     let mut seen = std::collections::HashSet::new();
 
@@ -195,7 +222,12 @@ pub fn discover_nav_links(base_url: &Url, html: &str, options: &CrawlOptions) ->
 fn clean_link_title(input: &str) -> String {
     input
         .split_whitespace()
-        .filter(|token| !matches!(*token, "chevron-right" | "arrow-right" | "external-link"))
+        .filter(|token| {
+            !matches!(
+                *token,
+                "chevron-right" | "arrow-right" | "external-link" | "menu" | "toc" | "#"
+            )
+        })
         .collect::<Vec<_>>()
         .join(" ")
         .trim()

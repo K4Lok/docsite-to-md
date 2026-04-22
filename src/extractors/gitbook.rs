@@ -1,11 +1,29 @@
 use url::Url;
 
 use crate::client::FetchResult;
-use crate::extractors::{Extractor, discover_nav_links};
-use crate::types::{CrawlOptions, Framework, PageRef};
+use crate::extractors::Extractor;
+use crate::types::Framework;
 
 pub struct GitBookModern;
 pub struct GitBookClassic;
+
+const GITBOOK_NAV_SELECTORS: &[&str] = &[
+    "aside a[href]",
+    "nav a[href]",
+    "[data-testid*='sidebar'] a[href]",
+    "#SUMMARY a[href]",
+    "main a[href]",
+    "a[href]",
+];
+
+const GITBOOK_CONTENT_SELECTORS: &[&str] = &[
+    "main",
+    "[role='main']",
+    "article",
+    ".markdown",
+    ".page",
+    "body",
+];
 
 impl Extractor for GitBookModern {
     fn framework(&self) -> Framework {
@@ -48,12 +66,16 @@ impl Extractor for GitBookModern {
         true
     }
 
-    fn browser_fallback_recommended(&self) -> bool {
-        true
+    fn nav_selectors(&self) -> &'static [&'static str] {
+        GITBOOK_NAV_SELECTORS
     }
 
-    fn discover_links(&self, base_url: &Url, html: &str, options: &CrawlOptions) -> Vec<PageRef> {
-        discover_nav_links(base_url, html, options)
+    fn content_selectors(&self) -> &'static [&'static str] {
+        GITBOOK_CONTENT_SELECTORS
+    }
+
+    fn browser_fallback_recommended(&self) -> bool {
+        true
     }
 
     fn preferred_markdown_url(&self, page_url: &Url) -> Option<String> {
@@ -97,8 +119,12 @@ impl Extractor for GitBookClassic {
         true
     }
 
-    fn discover_links(&self, base_url: &Url, html: &str, options: &CrawlOptions) -> Vec<PageRef> {
-        discover_nav_links(base_url, html, options)
+    fn nav_selectors(&self) -> &'static [&'static str] {
+        GITBOOK_NAV_SELECTORS
+    }
+
+    fn content_selectors(&self) -> &'static [&'static str] {
+        GITBOOK_CONTENT_SELECTORS
     }
 
     fn preferred_markdown_url(&self, page_url: &Url) -> Option<String> {

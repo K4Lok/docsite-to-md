@@ -7,6 +7,10 @@ use serde::{Deserialize, Serialize};
 pub enum Framework {
     GitBookModern,
     GitBookClassic,
+    Docusaurus,
+    MkDocsMaterial,
+    VitePress,
+    Nextra,
     GenericDocsFallback,
 }
 
@@ -106,6 +110,7 @@ pub struct ExportedPage {
     pub output_file: String,
     pub title: Option<String>,
     pub source_format: SourceFormat,
+    pub used_browser_fallback: bool,
     pub content_hash: Option<String>,
     pub skipped: bool,
     pub duplicate_of: Option<String>,

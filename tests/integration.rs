@@ -3,8 +3,8 @@ mod support;
 use std::fs;
 
 use docsite_to_md::{
-    BrowserOptions, BundleOptions, CrawlOptions, ExportOptions, Framework, bundle_site, crawl_site,
-    detect_site, export_site,
+    BrowserOptions, BundleOptions, CrawlOptions, ExportOptions, Framework, SourceFormat,
+    bundle_site, crawl_site, detect_site, export_site,
 };
 use tempfile::tempdir;
 
@@ -25,6 +25,48 @@ async fn detects_modern_gitbook() {
         .expect("site should detect");
     assert_eq!(profile.framework, Framework::GitBookModern);
     assert!(profile.supports_markdown_endpoints);
+}
+
+#[tokio::test]
+async fn detects_docusaurus() {
+    let server =
+        support::serve_routes(&[("/", "text/html", &fixture("docusaurus/root.html"))]).await;
+
+    let profile = detect_site(&server.uri())
+        .await
+        .expect("docusaurus should detect");
+    assert_eq!(profile.framework, Framework::Docusaurus);
+}
+
+#[tokio::test]
+async fn detects_mkdocs_material() {
+    let server = support::serve_routes(&[("/", "text/html", &fixture("mkdocs/root.html"))]).await;
+
+    let profile = detect_site(&server.uri())
+        .await
+        .expect("mkdocs should detect");
+    assert_eq!(profile.framework, Framework::MkDocsMaterial);
+}
+
+#[tokio::test]
+async fn detects_vitepress() {
+    let server =
+        support::serve_routes(&[("/", "text/html", &fixture("vitepress/root.html"))]).await;
+
+    let profile = detect_site(&server.uri())
+        .await
+        .expect("vitepress should detect");
+    assert_eq!(profile.framework, Framework::VitePress);
+}
+
+#[tokio::test]
+async fn detects_nextra() {
+    let server = support::serve_routes(&[("/", "text/html", &fixture("nextra/root.html"))]).await;
+
+    let profile = detect_site(&server.uri())
+        .await
+        .expect("nextra should detect");
+    assert_eq!(profile.framework, Framework::Nextra);
 }
 
 #[tokio::test]
@@ -257,6 +299,212 @@ async fn classic_gitbook_detects_and_exports_markdown() {
 }
 
 #[tokio::test]
+async fn exports_docusaurus_with_cleanup() {
+    let server = support::serve_routes(&[
+        ("/", "text/html", &fixture("docusaurus/root.html")),
+        (
+            "/docs/intro",
+            "text/html",
+            &fixture("docusaurus/intro.html"),
+        ),
+        (
+            "/docs/tutorial",
+            "text/html",
+            &fixture("docusaurus/tutorial.html"),
+        ),
+    ])
+    .await;
+
+    let output = tempdir().expect("tempdir");
+    let result = export_site(
+        &server.uri(),
+        ExportOptions {
+            output_dir: output.path().join("docusaurus"),
+            crawl: CrawlOptions::default(),
+            resume: false,
+            bundle_output: None,
+            browser: BrowserOptions::default(),
+        },
+    )
+    .await
+    .expect("export should succeed");
+
+    let markdown =
+        fs::read_to_string(result.output_dir.join("docs/intro.md")).expect("docusaurus markdown");
+    assert!(markdown.contains("[!NOTE]"));
+    assert!(!markdown.contains("On this page"));
+}
+
+#[tokio::test]
+async fn exports_mkdocs_material_with_tabs_and_tables() {
+    let server = support::serve_routes(&[
+        ("/", "text/html", &fixture("mkdocs/root.html")),
+        (
+            "/getting-started",
+            "text/html",
+            &fixture("mkdocs/getting-started.html"),
+        ),
+        ("/reference", "text/html", &fixture("mkdocs/reference.html")),
+    ])
+    .await;
+
+    let output = tempdir().expect("tempdir");
+    let result = export_site(
+        &server.uri(),
+        ExportOptions {
+            output_dir: output.path().join("mkdocs"),
+            crawl: CrawlOptions::default(),
+            resume: false,
+            bundle_output: None,
+            browser: BrowserOptions::default(),
+        },
+    )
+    .await
+    .expect("export should succeed");
+
+    let markdown =
+        fs::read_to_string(result.output_dir.join("getting-started.md")).expect("mkdocs markdown");
+    assert!(markdown.contains("### Python"));
+    let reference_md =
+        fs::read_to_string(result.output_dir.join("reference.md")).expect("reference markdown");
+    assert!(reference_md.contains("Name"));
+    assert!(reference_md.contains("material"));
+}
+
+#[tokio::test]
+async fn exports_vitepress_with_container_cleanup() {
+    let server = support::serve_routes(&[
+        ("/", "text/html", &fixture("vitepress/root.html")),
+        (
+            "/guide/start",
+            "text/html",
+            &fixture("vitepress/start.html"),
+        ),
+        (
+            "/guide/config",
+            "text/html",
+            &fixture("vitepress/config.html"),
+        ),
+    ])
+    .await;
+
+    let output = tempdir().expect("tempdir");
+    let result = export_site(
+        &server.uri(),
+        ExportOptions {
+            output_dir: output.path().join("vitepress"),
+            crawl: CrawlOptions::default(),
+            resume: false,
+            bundle_output: None,
+            browser: BrowserOptions::default(),
+        },
+    )
+    .await
+    .expect("export should succeed");
+
+    let markdown =
+        fs::read_to_string(result.output_dir.join("guide/start.md")).expect("vitepress markdown");
+    assert!(markdown.contains("[!TIP]"));
+    assert!(!markdown.contains("Table of contents"));
+}
+
+#[tokio::test]
+async fn vitepress_prefers_core_docs_over_locale_variants_in_small_crawls() {
+    let root = r#"<!DOCTYPE html>
+<html>
+  <body>
+    <nav class="VPNav">vitepress</nav>
+    <aside class="VPSidebar">
+      <a href="/es/guide/">Spanish</a>
+      <a href="/fa/guide/">Persian</a>
+      <a href="/guide/what-is-vitepress">Guide</a>
+    </aside>
+    <main class="VPDoc">
+      <div class="content">
+        <h1>Home</h1>
+      </div>
+    </main>
+  </body>
+</html>"#;
+
+    let page = r#"<!DOCTYPE html>
+<html>
+  <body>
+    <nav class="VPNav">vitepress</nav>
+    <main class="VPDoc">
+      <div class="content">
+        <h1>Guide</h1>
+      </div>
+    </main>
+  </body>
+</html>"#;
+
+    let server = support::serve_routes(&[
+        ("/", "text/html", root),
+        ("/guide/what-is-vitepress", "text/html", page),
+        ("/es/guide/", "text/html", page),
+        ("/fa/guide/", "text/html", page),
+    ])
+    .await;
+
+    let manifest = crawl_site(
+        &server.uri(),
+        CrawlOptions {
+            max_pages: Some(3),
+            ..CrawlOptions::default()
+        },
+    )
+    .await
+    .expect("crawl should succeed");
+
+    assert!(
+        manifest
+            .pages
+            .iter()
+            .any(|page| page.url.ends_with("/guide/what-is-vitepress"))
+    );
+}
+
+#[tokio::test]
+async fn exports_nextra_and_marks_no_browser_when_not_used() {
+    let server = support::serve_routes(&[
+        ("/", "text/html", &fixture("nextra/root.html")),
+        ("/docs/intro", "text/html", &fixture("nextra/intro.html")),
+        (
+            "/docs/advanced",
+            "text/html",
+            &fixture("nextra/advanced.html"),
+        ),
+    ])
+    .await;
+
+    let output = tempdir().expect("tempdir");
+    let result = export_site(
+        &server.uri(),
+        ExportOptions {
+            output_dir: output.path().join("nextra"),
+            crawl: CrawlOptions::default(),
+            resume: false,
+            bundle_output: None,
+            browser: BrowserOptions {
+                enabled: true,
+                webdriver_url: None,
+            },
+        },
+    )
+    .await
+    .expect("export should succeed");
+
+    let page = result
+        .pages
+        .iter()
+        .find(|page| page.page.url.ends_with("/docs/intro"))
+        .expect("nextra intro page");
+    assert_eq!(page.source_format, SourceFormat::Html);
+    assert!(!page.used_browser_fallback);
+}
+
+#[tokio::test]
 #[ignore = "live acceptance test"]
 async fn live_acceptance_mycactus() {
     let profile = detect_site("https://apidoc.mycactus.com")
@@ -270,21 +518,36 @@ async fn live_acceptance_mycactus() {
 
 #[tokio::test]
 #[ignore = "live acceptance test"]
-async fn live_acceptance_gitbook() {
-    let profile = detect_site("https://docs.gitbook.com")
+async fn live_acceptance_docusaurus() {
+    let profile = detect_site("https://jestjs.io/docs/getting-started")
         .await
-        .expect("docs.gitbook.com should detect");
-    assert!(matches!(
-        profile.framework,
-        Framework::GitBookModern | Framework::GitBookClassic
-    ));
+        .expect("docusaurus should detect");
+    assert_eq!(profile.framework, Framework::Docusaurus);
 }
 
 #[tokio::test]
 #[ignore = "live acceptance test"]
-async fn live_acceptance_non_gitbook() {
-    let profile = detect_site("https://www.rust-lang.org/learn")
+async fn live_acceptance_mkdocs_material() {
+    let profile = detect_site("https://squidfunk.github.io/mkdocs-material/")
         .await
-        .expect("rust-lang should detect");
-    assert_eq!(profile.framework, Framework::GenericDocsFallback);
+        .expect("mkdocs material should detect");
+    assert_eq!(profile.framework, Framework::MkDocsMaterial);
+}
+
+#[tokio::test]
+#[ignore = "live acceptance test"]
+async fn live_acceptance_vitepress() {
+    let profile = detect_site("https://vitepress.dev/")
+        .await
+        .expect("vitepress should detect");
+    assert_eq!(profile.framework, Framework::VitePress);
+}
+
+#[tokio::test]
+#[ignore = "live acceptance test"]
+async fn live_acceptance_nextra() {
+    let profile = detect_site("https://nextra.site/")
+        .await
+        .expect("nextra should detect");
+    assert_eq!(profile.framework, Framework::Nextra);
 }
