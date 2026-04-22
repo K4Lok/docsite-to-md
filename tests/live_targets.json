@@ -1,14 +1,14 @@
 [
   {
-    "name": "mycactus-gitbook",
+    "name": "gitbook-official",
     "framework": "git_book_modern",
-    "entry_url": "https://apidoc.mycactus.com/",
+    "entry_url": "https://docs.gitbook.com/",
     "scope_prefix": null,
     "max_pages": 6,
     "representative_urls": [
-      "https://apidoc.mycactus.com/"
+      "https://gitbook.com/docs"
     ],
-    "notes": "Regression anchor for real-world GitBook coverage."
+    "notes": "Official GitBook docs for public GitBook regression coverage."
   },
   {
     "name": "jest",

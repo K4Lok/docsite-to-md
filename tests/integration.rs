@@ -506,10 +506,10 @@ async fn exports_nextra_and_marks_no_browser_when_not_used() {
 
 #[tokio::test]
 #[ignore = "live acceptance test"]
-async fn live_acceptance_mycactus() {
-    let profile = detect_site("https://apidoc.mycactus.com")
+async fn live_acceptance_gitbook_official() {
+    let profile = detect_site("https://docs.gitbook.com")
         .await
-        .expect("mycactus should detect");
+        .expect("gitbook official docs should detect");
     assert!(matches!(
         profile.framework,
         Framework::GitBookModern | Framework::GitBookClassic

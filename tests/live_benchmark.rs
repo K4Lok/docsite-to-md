@@ -75,7 +75,7 @@ macro_rules! live_smoke_test {
     };
 }
 
-live_smoke_test!(live_smoke_mycactus_gitbook, "mycactus-gitbook");
+live_smoke_test!(live_smoke_gitbook_official, "gitbook-official");
 live_smoke_test!(live_smoke_jest, "jest");
 live_smoke_test!(live_smoke_redux, "redux");
 live_smoke_test!(live_smoke_react_native, "react-native");

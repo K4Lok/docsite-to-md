@@ -43,10 +43,10 @@ cargo install --path .
 ## Usage
 
 ```bash
-docsite-to-md detect https://apidoc.mycactus.com
-docsite-to-md crawl https://apidoc.mycactus.com --scope-prefix /api-reference
-docsite-to-md export https://apidoc.mycactus.com --output-dir ./mycactus-docs
-docsite-to-md bundle https://apidoc.mycactus.com --output ./mycactus.md
+docsite-to-md detect https://docs.gitbook.com
+docsite-to-md crawl https://docs.gitbook.com --scope-prefix /docs
+docsite-to-md export https://docs.gitbook.com --output-dir ./gitbook-docs
+docsite-to-md bundle https://docs.gitbook.com --output ./gitbook.md
 ```
 
 ## Library
@@ -56,10 +56,10 @@ use docsite_to_md::{detect_site, crawl_site, export_site, CrawlOptions, ExportOp
 
 # #[tokio::main]
 # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-let profile = detect_site("https://apidoc.mycactus.com").await?;
-let manifest = crawl_site("https://apidoc.mycactus.com", CrawlOptions::default()).await?;
+let profile = detect_site("https://docs.gitbook.com").await?;
+let manifest = crawl_site("https://docs.gitbook.com", CrawlOptions::default()).await?;
 let result = export_site(
-    "https://apidoc.mycactus.com",
+    "https://docs.gitbook.com",
     ExportOptions {
         output_dir: "output".into(),
         crawl: CrawlOptions::default(),
