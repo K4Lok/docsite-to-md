@@ -37,6 +37,12 @@ Live Markdown quality still varies by site. The tool is strongest on navigation 
 ## Install
 
 ```bash
+cargo install docsite-to-md
+```
+
+For local development from a checkout:
+
+```bash
 cargo install --path .
 ```
 
@@ -78,9 +84,37 @@ let result = export_site(
 - GitBook normalization is conservative and preserves source meaning where possible.
 - Support for additional frameworks can be added via new extractors.
 
-## Live Benchmark
+## Benchmarks
 
-The repo includes a checked-in live benchmark target list for supported public docs sites in `tests/live_targets.json`.
+The repo includes repeatable fixture benchmarks plus a checked-in live benchmark target list for supported public docs sites in `tests/live_targets.json`.
+
+Run deterministic local benchmarks:
+
+```bash
+cargo bench
+```
+
+Latest local fixture export baseline:
+
+| Framework | Fixture pages | Export time | Throughput |
+| --- | ---: | ---: | ---: |
+| `GitBookModern` | 3 | 3.50 ms | 858 pages/s |
+| `GitBookClassic` | 2 | 2.78 ms | 720 pages/s |
+| `Docusaurus` | 3 | 4.17 ms | 719 pages/s |
+| `MkDocsMaterial` | 3 | 3.39 ms | 885 pages/s |
+| `VitePress` | 3 | 3.87 ms | 776 pages/s |
+| `Nextra` | 3 | 3.27 ms | 918 pages/s |
+| `GenericDocsFallback` | 4 | 3.86 ms | 1,037 pages/s |
+
+These numbers come from checked-in fixtures served by a local mock server via `cargo bench --bench export export_framework_fixtures`. Live sites vary with network latency, page size, rate limits, and site markup.
+
+Report package and binary size:
+
+```bash
+bash scripts/package-size.sh
+```
+
+See `docs/benchmarks.md` for benchmark details.
 
 Useful maintainer commands:
 
@@ -99,3 +133,18 @@ What to inspect in the report:
 - per-page quality grade: `pass`, `warn`, or `fail`
 - remaining chrome leakage such as `Copy page`, `CTRL K`, edit-page links, feedback widgets, anchor glyph clutter, or raw bootstrap script output
 - whether any exported page used browser fallback
+
+## Publishing
+
+Rust packages are published to crates.io and installed with Cargo. Before publishing a release, run:
+
+```bash
+cargo login
+cargo test
+cargo test --features browser
+cargo package --list
+cargo publish --dry-run
+cargo publish
+```
+
+`cargo package --list` is a useful final check for exactly which source files will be included in the `.crate` archive.

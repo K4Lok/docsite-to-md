@@ -1,7 +1,8 @@
 [package]
 name = "docsite-to-md"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
+rust-version = "1.85"
 authors = ["k4lok"]
 description = "A robust Rust CLI and library for exporting documentation sites to Markdown"
 license = "MIT OR Apache-2.0"
@@ -31,7 +32,12 @@ url = "2.5"
 fantoccini = { version = "0.21", optional = true, default-features = false, features = ["rustls-tls"] }
 
 [dev-dependencies]
+criterion = "0.5"
 wiremock = "0.6"
+
+[[bench]]
+name = "export"
+harness = false
 
 [[bin]]
 name = "docsite-to-md"
