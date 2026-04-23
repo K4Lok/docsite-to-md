@@ -22,25 +22,29 @@ The Criterion suite measures:
 - bundle generation over a generic docs fixture
 - framework-by-framework fixture export speed
 
-Latest local framework export baseline:
+Latest live export benchmark:
 
-| Framework | Fixture pages | Export time | Throughput |
-| --- | ---: | ---: | ---: |
-| `GitBookModern` | 3 | 3.50 ms | 858 pages/s |
-| `GitBookClassic` | 2 | 2.78 ms | 720 pages/s |
-| `Docusaurus` | 3 | 4.17 ms | 719 pages/s |
-| `MkDocsMaterial` | 3 | 3.39 ms | 885 pages/s |
-| `VitePress` | 3 | 3.87 ms | 776 pages/s |
-| `Nextra` | 3 | 3.27 ms | 918 pages/s |
-| `GenericDocsFallback` | 4 | 3.86 ms | 1,037 pages/s |
+| Framework | Live target | Max pages | Exported pages | Wall time | Throughput |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `GitBookModern` | [GitBook docs](https://docs.gitbook.com/) | 100 | 100 | 43.69 s | 2.29 pages/s |
+| `Docusaurus` | [React Native docs](https://reactnative.dev/docs/getting-started) | 100 | 79 | 33.75 s | 2.34 pages/s |
+| `MkDocsMaterial` | [MkDocs Material](https://squidfunk.github.io/mkdocs-material/) | 100 | 94 | 58.74 s | 1.60 pages/s |
+| `VitePress` | [VitePress docs](https://vitepress.dev/) | 100 | 100 | 19.84 s | 5.04 pages/s |
+| `Nextra` | [Nextra docs](https://nextra.site/) | 100 | 77 | 55.61 s | 1.38 pages/s |
 
-Run only this table's benchmark group with:
+These numbers were captured with the release binary, `--max-pages 100`, `--concurrency 8`, and live network requests. They are a snapshot, not a guarantee: live sites vary with network latency, page size, rate limits, and site markup.
+
+Run the live benchmark table with:
+
+```bash
+bash scripts/live-benchmark.sh
+```
+
+Run only the fixture framework benchmark group with:
 
 ```bash
 cargo bench --bench export export_framework_fixtures
 ```
-
-These are local fixture timings, not live-site guarantees. Real exports depend on network latency, page size, rate limits, and site markup.
 
 ## Package Size
 
